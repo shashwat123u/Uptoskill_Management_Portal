@@ -35,7 +35,14 @@ Create `backend/.env`:
 MONGO_URI=mongodb://127.0.0.1:27017/uptoskill
 JWT_SECRET=replace-this-with-a-long-random-secret
 FRONTEND_URL=http://localhost:5173
+BREVO_SMTP_HOST=smtp-relay.brevo.com
+BREVO_SMTP_PORT=587
+BREVO_SMTP_USER=your_brevo_login_email
+BREVO_SMTP_KEY=your_brevo_smtp_key
+BREVO_SENDER_EMAIL=your_verified_sender_email
 ```
+
+Certificate finalization emails use Brevo SMTP. Replace the placeholder values with the Brevo login email, SMTP key, and a verified sender email, then restart the backend. Do not use a Brevo API key in `BREVO_SMTP_KEY` unless Brevo identifies it as an SMTP key, and do not commit the values.
 
 For MongoDB Atlas, replace `MONGO_URI` with the Atlas connection string and make sure the database user and network access rules allow your machine to connect. Do not commit `.env` or any secret values to GitHub.
 

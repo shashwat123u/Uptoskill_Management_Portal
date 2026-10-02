@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const certificateRequestSchema = new mongoose.Schema(
 {
     requestNumber: {
@@ -8,7 +7,6 @@ const certificateRequestSchema = new mongoose.Schema(
         unique: true,
         trim: true
     },
-
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
@@ -66,6 +64,15 @@ const certificateRequestSchema = new mongoose.Schema(
         ref: "user"
     },
 
+    forwardedAt: {
+        type: Date
+    },
+
+    forwardedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user"
+    },
+
     rejectionReason: {
         type: String,
         trim: true
@@ -79,6 +86,11 @@ const certificateRequestSchema = new mongoose.Schema(
 {
     timestamps: true
 });
+
+certificateRequestSchema.index({ status: 1, requestedAt: -1 });
+certificateRequestSchema.index({ reviewedBy: 1, reviewedAt: -1 });
+certificateRequestSchema.index({ requestedAt: -1, certificateType: 1 });
+certificateRequestSchema.index({ forwardedBy: 1, forwardedAt: -1 });
 
 certificateRequestSchema.pre("save", async function () {
     const userModel = mongoose.model("user");

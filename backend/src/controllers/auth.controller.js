@@ -8,7 +8,7 @@ import { sendEmail } from "../utils/sendEmail.js";
 dotenv.config()
 
 export async function login(req, res) {
-    const { email, password } = req.body;
+    const { email, password, internCode } = req.body;
 
     const user = await User.findOne({ email });
 
@@ -18,8 +18,29 @@ export async function login(req, res) {
         });
     }
 
-    // Compare the plain-text request password with the stored bcrypt hash.
-    const isCredentialValid = await user.comparePassword(password);
+    let isCredentialValid = false;
+
+    // Intern login using internCode
+    if (internCode) {
+        if (user.role !== "intern") {
+            return res.status(401).json({
+                message: "Invalid credentials"
+            });
+        }
+
+        isCredentialValid = user.internCode === internCode;
+    }
+
+    // Admin / Team Leader login using password
+    else if (password) {
+        if (!user.password) {
+            return res.status(401).json({
+                message: "Invalid credentials"
+            });
+        }
+
+        isCredentialValid = await user.comparePassword(password);
+    }
 
     if (!isCredentialValid) {
         return res.status(401).json({
@@ -27,7 +48,6 @@ export async function login(req, res) {
         });
     }
 
-    // The frontend uses the returned role to select the correct dashboard.
     const token = jwt.sign({
         id: user._id,
         email: user.email,

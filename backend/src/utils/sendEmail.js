@@ -1,36 +1,35 @@
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
 import nodemailer from "nodemailer";
+const isPlaceholder = (value) =>
+  !value || /^(your_|actual_)/i.test(value);
 
-dotenv.config({
-    path: fileURLToPath(new URL("../../.env", import.meta.url)),
-    override: true
-});
+export const sendEmail = async ({ to, subject, html, attachments }) => {
+  const smtpUser = process.env.BREVO_SMTP_USER;
+  const smtpKey = process.env.BREVO_SMTP_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+  const smtpHost = process.env.BREVO_SMTP_HOST || "smtp-relay.brevo.com";
+  const smtpPort = Number(process.env.BREVO_SMTP_PORT || 587);
 
-export const sendEmail = async ({ to, subject, html }) => {
-    const { BREVO_SMTP_USER, BREVO_SMTP_KEY, BREVO_SENDER_EMAIL } = process.env;
+  if (isPlaceholder(smtpUser) || isPlaceholder(smtpKey) || isPlaceholder(senderEmail)) {
+    throw new Error(
+      "Email delivery is not configured. Set BREVO_SMTP_USER, BREVO_SMTP_KEY, and BREVO_SENDER_EMAIL to real Brevo values in backend/.env, then restart the backend."
+    );
+  }
 
-    if (!BREVO_SMTP_USER || !BREVO_SMTP_KEY) {
-        throw new Error("BREVO_SMTP_USER and BREVO_SMTP_KEY must be configured");
-    }
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: smtpUser,
+      pass: smtpKey,
+    },
+  });
 
-    if (!BREVO_SENDER_EMAIL) {
-        throw new Error("BREVO_SENDER_EMAIL must be configured with a verified Brevo sender");
-    }
-
-    const transporter = nodemailer.createTransport({
-        host: "smtp-relay.brevo.com",
-        port: 587,
-        auth: {
-            user: BREVO_SMTP_USER,
-            pass: BREVO_SMTP_KEY
-        }
-    });
-
-    return transporter.sendMail({
-        from: `"UPTOSKILL" <${BREVO_SENDER_EMAIL}>`,
-        to,
-        subject,
-        html
-    });
+  return await transporter.sendMail({
+    from: `"UPTOSKILL" <${senderEmail}>`,
+    to,
+    subject,
+    html,
+    ...(attachments?.length ? { attachments } : {}),
+  });
 };

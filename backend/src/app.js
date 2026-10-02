@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dns from 'dns';
@@ -15,6 +17,8 @@ import teamleaderRouter from './routes/teamleader.routes.js';
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Allow the frontend to send and receive the authentication cookie.
 app.use(cors({
@@ -27,6 +31,7 @@ app.use(express.json());
 
 // Parse cookies and populate `req.cookies`.
 app.use(cookieParser());
+app.use(express.static(path.resolve(__dirname, '../public')));
 
 // Mount authentication routes at `/api/auth` (e.g., `/api/auth/login`).
 app.use('/api/auth', authRouter);

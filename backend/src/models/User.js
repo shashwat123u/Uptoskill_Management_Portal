@@ -73,6 +73,10 @@ const userSchema = new mongoose.Schema(
         timestamps: true
     });
 
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ role: 1, 'internshipDetails.status': 1 });
+userSchema.index({ role: 1, domain: 1 });
+userSchema.index({ role: 1, 'internshipDetails.teamleaderEmail': 1, endDate: 1 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
 
@@ -83,20 +87,16 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 };
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
     if (!this.internCode) {
-        this.internCode = this.email
+        this.internCode = this.email;
     }
 
-    if (!this.isModified("password")) {
-        return;
+    if (this.isModified("password")) {
+        if (!/^\$2[aby]\$\d{2}\$/.test(this.password)) {
+            this.password = await bcrypt.hash(this.password, 10);
+        }
     }
-
-    // Never store a plain-text password or intern code.
-    if (!/^\$2[aby]\$\d{2}\$/.test(this.password)) {
-        this.password = await bcrypt.hash(this.password, 10);
-    }
-    next;
 });
 
 const userModel = mongoose.model(

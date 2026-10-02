@@ -4,9 +4,15 @@ const certificateSchema = new mongoose.Schema(
 {
     certificateNumber: {
         type: String,
-        required: true,
         unique: true,
+        sparse: true,
         trim: true
+    },
+
+    requestId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "certificate_request",
+        index: true
     },
 
     userId: {
@@ -18,14 +24,12 @@ const certificateSchema = new mongoose.Schema(
 
     internCode: {
         type: String,
-        required: true,
         index: true
     },
 
     internshipId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "internship",
-        required: true,
+        ref: "user",
         index: true
     },
 
@@ -36,7 +40,6 @@ const certificateSchema = new mongoose.Schema(
 
     certificateType: {
         type: String,
-        required: true,
         trim: true
     },
 
@@ -58,10 +61,14 @@ const certificateSchema = new mongoose.Schema(
         default: Date.now
     },
 
+    htmlContent: {
+        type: String
+    },
+
     status: {
         type: String,
-        enum: ["generated", "issued", "revoked", "expired"],
-        default: "generated",
+        enum: ["draft", "finalized", "generated", "issued", "revoked", "expired"],
+        default: "draft",
         index: true
     },
 
@@ -69,10 +76,18 @@ const certificateSchema = new mongoose.Schema(
         type: String
     },
 
+    fileUrl: {
+        type: String
+    },
+
+    emailSentAt: {
+        type: Date
+    },
+
     verificationCode: {
         type: String,
-        required: true,
         unique: true,
+        sparse: true,
         trim: true,
         index: true
     },
@@ -90,20 +105,32 @@ const certificateSchema = new mongoose.Schema(
     timestamps: true
 });
 
+certificateSchema.index({ issuedDate: -1, status: 1 });
+certificateSchema.index({ certificateType: 1, status: 1 });
+
 certificateSchema.pre("save", async function () {
     const userModel = mongoose.model("user");
-    const internshipModel = mongoose.model("internship");
 
     const user = await userModel.findById(this.userId);
     if (!user) throw new Error("userId does not reference an existing user");
 
-    const internship = await internshipModel.findById(this.internshipId);
-    if (!internship) throw new Error("internshipId does not reference an existing internship");
+    if (this.pdfPath && !this.fileUrl) {
+        this.fileUrl = this.pdfPath;
+    }
+    if (this.fileUrl && !this.pdfPath) {
+        this.pdfPath = this.fileUrl;
+    }
 
     if (this.templateId) {
         const certificateTemplateModel = mongoose.model("certificate_template");
         const template = await certificateTemplateModel.findById(this.templateId);
         if (!template) throw new Error("templateId does not reference an existing certificate template");
+    }
+
+    if (this.requestId) {
+        const certificateRequestModel = mongoose.model("certificate_request");
+        const request = await certificateRequestModel.findById(this.requestId);
+        if (!request) throw new Error("requestId does not reference an existing certificate request");
     }
 
     if (this.generatedBy) {

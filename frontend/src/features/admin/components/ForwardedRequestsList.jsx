@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useForwardedRequests from '../hooks/useForwardedRequests';
 import './ForwardedRequestsList.css';
 
 const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
 export default function ForwardedRequestsList() {
+  const navigate = useNavigate();
   const { requests, loading, error, refetch, approveRequest, rejectRequest } = useForwardedRequests();
   const [rejectingId, setRejectingId] = useState(null);
   const [reason, setReason] = useState('');
@@ -12,7 +14,10 @@ export default function ForwardedRequestsList() {
 
   const approve = async (id) => {
     setActionError(null);
-    try { await approveRequest(id); } catch (requestError) { setActionError(requestError.message); }
+    try {
+      await approveRequest(id);
+      navigate(`/admin/certificate-review/${id}`);
+    } catch (requestError) { setActionError(requestError.message); }
   };
 
   const reject = async (id) => {
